@@ -1474,12 +1474,14 @@ static int MLOCKED_TEXT stress_run_child(
 
 	stress_set_proc_state(name, STRESS_STATE_INIT);
 	stress_mwc_reseed();
+	uint32_t w, z;
+	stress_mwc_get_seed(&w, &z);
 	stress_set_max_limits();
 	stress_set_iopriority(ionice_class, ionice_level);
 	(void)umask(0077);
 
-	pr_dbg("%s: [%d] started (instance %" PRIu32 " on CPU %u)\n",
-		name, (int)child_pid, instance, stress_get_cpu());
+	pr_dbg("%s: [%d] started (instance %" PRIu32 " on CPU %u) (getseed: w=%u, z=%u, seed=%llu)\n",
+		name, (int)child_pid, instance, stress_get_cpu(), w, z, (((uint64_t)z << 32) | w));
 
 	if (g_opt_flags & OPT_FLAGS_INTERRUPTS)
 		stress_interrupts_start(stats->interrupts);
