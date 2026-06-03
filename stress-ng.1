@@ -470,6 +470,21 @@ use cpu bandwidth reclaim feature for deadline scheduler (only on Linux).
 set the random number generate seed with a 64 bit value. Allows stressors to
 use the same random number generator sequences on each invocation.
 .TP
+.B \-\-seed\-yaml file
+set the per-instance random number generator seeds from a seed yaml file
+previously produced by \-\-seed\-yaml\-dump. Each stressor instance is seeded
+with the value recorded for it, allowing an earlier run to be reproduced on a
+per-instance (per-CPU) basis. The number of instances for each stressor in the
+file must match the number of instances in the current run, otherwise stress-ng
+will abort. This option is mutually exclusive with \-\-seed and \-\-no\-rand\-seed.
+A few stressors reseed the random number generator internally, so reproducibility
+for those is bounded by their own behaviour.
+.TP
+.B \-\-seed\-yaml\-dump file
+dump the per-instance random number generator seed actually used by each stressor
+instance to the named seed yaml file. The file can later be replayed with the
+\-\-seed\-yaml option.
+.TP
 .B \-\-settings
 show the various option settings.
 .TP

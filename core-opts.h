@@ -82,6 +82,7 @@
 #define OPT_FLAGS_PERMUTE	 STRESS_BIT_ULL(51)	/* --permute N */
 #define OPT_FLAGS_INTERRUPTS	 STRESS_BIT_ULL(52)	/* --interrupts */
 #define OPT_FLAGS_PROGRESS	 STRESS_BIT_ULL(53)	/* --progress */
+#define OPT_FLAGS_SEED_YAML	 STRESS_BIT_ULL(54)	/* --seed-yaml */
 
 #define OPT_FLAGS_MINMAX_MASK		\
 	(OPT_FLAGS_MINIMIZE | OPT_FLAGS_MAXIMIZE)
@@ -1179,6 +1180,8 @@ typedef enum {
 	OPT_secretmem_ops,
 
 	OPT_seed,
+	OPT_seed_yaml,
+	OPT_seed_yaml_dump,
 
 	OPT_seek,
 	OPT_seek_ops,

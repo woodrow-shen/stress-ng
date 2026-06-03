@@ -830,6 +830,8 @@ const struct option stress_long_options[] = {
 	{ "secretmem",		1,	0,	OPT_secretmem },
 	{ "secretmem-ops",	1,	0,	OPT_secretmem_ops },
 	{ "seed",		1,	0,	OPT_seed },
+	{ "seed-yaml",		1,	0,	OPT_seed_yaml },
+	{ "seed-yaml-dump",	1,	0,	OPT_seed_yaml_dump },
 	{ "seek",		1,	0,	OPT_seek },
 	{ "seek-ops",		1,	0,	OPT_seek_ops },
 	{ "seek-punch",		0,	0,	OPT_seek_punch  },

@@ -261,6 +261,7 @@ HEADERS = \
 	core-pthread.h \
 	core-put.h \
 	core-resources.h \
+	core-seed-yaml.h \
 	core-sched.h \
 	core-setting.h \
 	core-shared-heap.h \
@@ -672,6 +673,7 @@ CORE_SRC = \
 	core-opts.c \
 	core-out-of-memory.c \
 	core-parse-opts.c \
+	core-seed-yaml.c \
 	core-perf.c \
 	core-processes.c \
 	core-resources.c \

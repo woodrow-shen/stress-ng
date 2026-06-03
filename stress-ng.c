@@ -39,6 +39,7 @@
 #include "core-out-of-memory.h"
 #include "core-perf.h"
 #include "core-pragma.h"
+#include "core-seed-yaml.h"
 #include "core-shared-heap.h"
 #include "core-smart.h"
 #include "core-stressors.h"
@@ -345,6 +346,8 @@ static const stress_help_t help_generic[] = {
 	{ NULL,		"sched-deadline N",	"set deadline for SCHED_DEADLINE to N nanosecs (Linux only)" },
 	{ NULL,		"sched-reclaim",        "set reclaim cpu bandwidth for deadline scheduler (Linux only)" },
 	{ NULL,		"seed N",		"set the random number generator seed with a 64 bit value" },
+	{ NULL,		"seed-yaml file",	"set per-instance seeds from a seed yaml file" },
+	{ NULL,		"seed-yaml-dump file",	"dump per-instance seeds to a seed yaml file" },
 	{ NULL,		"sequential N",		"run all stressors one by one, invoking N of them" },
 	{ NULL,		"skip-silent",		"silently skip unimplemented stressors" },
 	{ NULL,		"smart",		"show changes in S.M.A.R.T. data" },
@@ -1425,7 +1428,25 @@ static int MLOCKED_TEXT stress_run_child(
 		stress_ksm_memory_merge(1);
 
 	stress_set_proc_state(name, STRESS_STATE_INIT);
-	stress_mwc_reseed();
+	if (g_opt_flags & OPT_FLAGS_SEED_YAML) {
+		uint64_t seed;
+
+		if (stress_seed_yaml_lookup(name, instance, &seed)) {
+			stress_mwc_set_seed((uint32_t)(seed & 0xffffffff),
+					    (uint32_t)(seed >> 32));
+		} else {
+			/* validated earlier, but reseed defensively */
+			stress_mwc_reseed();
+		}
+	} else {
+		stress_mwc_reseed();
+	}
+	{
+		uint32_t seed_w, seed_z;
+
+		stress_mwc_get_seed(&seed_w, &seed_z);
+		stats->seed = ((uint64_t)seed_z << 32) | seed_w;
+	}
 	stress_set_max_limits();
 	stress_set_iopriority(ionice_class, ionice_level);
 	(void)umask(0077);
@@ -3161,6 +3182,13 @@ next_opt:
 			g_opt_flags |= OPT_FLAGS_SEED;
 			stress_set_setting_global("seed", TYPE_ID_UINT64, &u64);
 			break;
+		case OPT_seed_yaml:
+			g_opt_flags |= OPT_FLAGS_SEED_YAML;
+			stress_set_setting_global("seed-yaml", TYPE_ID_STR, optarg);
+			break;
+		case OPT_seed_yaml_dump:
+			stress_set_setting_global("seed-yaml-dump", TYPE_ID_STR, optarg);
+			break;
 		case OPT_sequential:
 			g_opt_flags |= OPT_FLAGS_SEQUENTIAL;
 			g_opt_sequential = stress_get_int32(optarg);
@@ -3689,6 +3717,13 @@ int main(int argc, char **argv, char **envp)
 		ret = EXIT_FAILURE;
 		goto exit_stressors_free;
 	}
+	if ((g_opt_flags & OPT_FLAGS_SEED_YAML) &&
+	    (g_opt_flags & (OPT_FLAGS_NO_RAND_SEED | OPT_FLAGS_SEED))) {
+		(void)fprintf(stderr, "cannot invoke mutually exclusive "
+			"--seed-yaml with --seed or --no-rand-seed options together\n");
+		ret = EXIT_FAILURE;
+		goto exit_stressors_free;
+	}
 
 	/*
 	 *  Sanity check --with option
@@ -3852,6 +3887,24 @@ int main(int argc, char **argv, char **envp)
 	stress_setup_stats_buffers();
 
 	/*
+	 *  Load and validate per-instance seeds from a seed yaml file. The
+	 *  number of instances per stressor in the file must match the run.
+	 */
+	if (g_opt_flags & OPT_FLAGS_SEED_YAML) {
+		char *seed_yaml_filename = NULL;
+
+		(void)stress_get_setting("seed-yaml", &seed_yaml_filename);
+		if (stress_seed_yaml_load(seed_yaml_filename) < 0) {
+			ret = EXIT_FAILURE;
+			goto exit_shared_unmap;
+		}
+		if (stress_seed_yaml_validate(stressors_head) < 0) {
+			ret = EXIT_FAILURE;
+			goto exit_shared_unmap;
+		}
+	}
+
+	/*
 	 *  Allocate shared cache memory
 	 */
 	g_shared->mem_cache.size = 0;
@@ -3920,6 +3973,18 @@ int main(int argc, char **argv, char **envp)
 	 */
 	if (g_opt_flags & OPT_FLAGS_METRICS)
 		stress_metrics_dump(yaml);
+
+	/*
+	 *  Dump per-instance seeds to a seed yaml file if requested
+	 */
+	{
+		char *seed_yaml_dump_filename = NULL;
+
+		if (stress_get_setting("seed-yaml-dump", &seed_yaml_dump_filename))
+			stress_seed_yaml_dump(seed_yaml_dump_filename, stressors_head);
+	}
+	if (g_opt_flags & OPT_FLAGS_SEED_YAML)
+		stress_seed_yaml_free();
 
 	if (g_opt_flags & OPT_FLAGS_INTERRUPTS)
 		stress_interrupts_dump(yaml, stressors_head);
