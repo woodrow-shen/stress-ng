@@ -278,6 +278,7 @@ void stress_seed_yaml_dump(const char *path, stress_stressor_t *stressors_list)
 	(void)fprintf(fp, "seeds:\n");
 	for (ss = stressors_list; ss; ss = ss->next) {
 		int32_t j;
+		bool any_seed = false;
 		char munged[64];
 
 		if (ss->ignore.run || ss->ignore.permute)
@@ -285,11 +286,26 @@ void stress_seed_yaml_dump(const char *path, stress_stressor_t *stressors_list)
 		if (!ss->stats)
 			continue;
 
+		/*
+		 *  Only dump instances that actually started and recorded
+		 *  their own seed. seed_set stays false for an instance never
+		 *  reached (e.g. run interrupted before its turn in
+		 *  --sequential), so its zero-initialised stats->seed is
+		 *  skipped rather than dumped as a bogus seed of 0. A stressor
+		 *  with no started instances is omitted entirely so the file
+		 *  has no empty headers. Note stats->pid cannot be used here:
+		 *  it is reset to 0 once an instance is reaped.
+		 */
 		(void)stress_munge_underscore(munged, ss->stressor->name, sizeof(munged));
-		(void)fprintf(fp, "  %s:\n", munged);
 		for (j = 0; j < ss->num_instances; j++) {
 			const stress_stats_t *const stats = ss->stats[j];
 
+			if (!stats->seed_set)
+				continue;
+			if (!any_seed) {
+				(void)fprintf(fp, "  %s:\n", munged);
+				any_seed = true;
+			}
 			(void)fprintf(fp, "    instance_%" PRId32 ": %" PRIu64 "\n",
 				j, stats->seed);
 		}

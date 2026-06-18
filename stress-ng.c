@@ -1446,6 +1446,7 @@ static int MLOCKED_TEXT stress_run_child(
 
 		stress_mwc_get_seed(&seed_w, &seed_z);
 		stats->seed = ((uint64_t)seed_z << 32) | seed_w;
+		stats->seed_set = true;
 	}
 	stress_set_max_limits();
 	stress_set_iopriority(ionice_class, ionice_level);

@@ -541,6 +541,7 @@ typedef struct stress_stats {
 	double rusage_stime_total;	/* rusage system time */
 	long int rusage_maxrss;		/* rusage max RSS, 0 = unused */
 	uint64_t seed;			/* mwc seed used by this instance */
+	bool seed_set;			/* true once this instance recorded its seed */
 } stress_stats_t;
 
 typedef struct shared_heap {
